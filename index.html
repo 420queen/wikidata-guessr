@@ -1,119 +1,44 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset='utf-8'>
-    <title>Custom Guessr</title>
-    <link rel='stylesheet' href='css/bootstrap.css' />
-    <link rel='stylesheet' href='css/style.css' />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
-    <script>
-        let locations = [];
-        let current = 0;
-        let totalScore = 0;
-
-        async function startGame() {
-            const res = await fetch('locations.json');
-            locations = await res.json();
-            current = 0;
-            totalScore = 0;
-            nextRound();
-        }
-
-        function nextRound() {
-            if (current >= locations.length) {
-                document.getElementById('endGame').style.display = 'block';
-                document.getElementById('endGame').innerHTML = '<h2>Game Over</h2><p>Total Score: ' + totalScore + '</p>';
-                return;
-            }
-
-            const loc = locations[current];
-            document.getElementById('image').src = loc.image;
-            document.querySelector('.round b').innerText = (current + 1) + '/' + locations.length;
-
-            if (window.guessMap) guessMap.remove();
-            guessMap = L.map('map').setView([20, 0], 2);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(guessMap);
-            guessMap.once('click', function (e) {
-                const guessed = e.latlng;
-                const actual = L.latLng(loc.lat, loc.lon);
-                const distance = guessed.distanceTo(actual) / 1000;
-                const score = Math.max(0, 5000 - Math.round(distance));
-                totalScore += score;
-
-                document.querySelector('.roundScore b').innerText = score;
-                document.querySelector('.totalScore b').innerText = totalScore;
-
-                L.marker(actual).addTo(guessMap);
-                L.polyline([guessed, actual]).addTo(guessMap);
-
-                current++;
-                setTimeout(nextRound, 3000);
-            });
-        }
-
-        window.onload = () => {
-            document.getElementById('guessButton').onclick = () => {
-                alert('Click on the map to guess the location.');
-            };
-            startGame();
-        };
-    </script>
-    <style>
-        body {
-            background: black;
-            color: white;
-            font-family: sans-serif;
-            margin: 0;
-        }
-        #content {
-            padding: 20px;
-            text-align: center;
-        }
-        #image {
-            display: block;
-            margin: 60px auto 20px auto;
-            max-width: 90%;
-            max-height: 60vh;
-            border: 4px solid white;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5);
-        }
-        #map {
-            width: 90%;
-            height: 400px;
-            margin: 20px auto;
-            box-shadow: 0 0 15px rgba(255,255,255,0.3);
-        }
-        #guessButton {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: #cc3333;
-            color: white;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            border-radius: 6px;
-        }
-        #guessButton:hover {
-            background: #ff6666;
-        }
-        #scoreBoard {
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div id="content">
-        <div id="scoreBoard">
-            <span class='round'>Current Round: <b>1/5</b></span><br/>
-            <span class='roundScore'>Last Round Score: <b>0</b></span><br/>
-            <span class='totalScore'>Total Score: <b>0</b></span><br />
+    <head>
+        <meta charset='utf-8'>
+        <title>Wikidata Guessr</title>
+        <link rel='stylesheet' href='css/bootstrap.css' />
+        <link rel='stylesheet' href='css/style.css' />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
+        <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
+        <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
+        <script type='text/javascript' src='js/rnd.js'></script>
+        <script type='text/javascript' src='js/minimap.js'></script>
+        <script type='text/javascript' src='js/roundmap.js'></script>
+        <script type='text/javascript' src='js/app.js'></script>
+    </head>
+    <body>
+        <div id='content'>
+            <div id="roundEnd"></div>
+            <div id="endGame"></div>
+            <div id='scoreBoard'>
+                <span class='round'>Current Round: <b>1/5</b></span><br/>
+                <span class='roundScore'>Last Round Score: <b>0</b></span><br/>
+                <span class='totalScore'>Total Score: <b>0</b></span><br />
+                <span><a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a></span>
+                <span>
+                    <select id="mode">
+                        <option value="">Start new game...</option>
+                        <option value="">Any item</option>
+                        <option value="?Q7138926">Parliament buildings</option>
+                        <option value="?Q515">Cities</option>
+                        <option value="?Q570116">Tourist attractions</option>
+                        <option value="?Q8502">Mountains</option>
+                        <option value="?Q204832">Roller coasters</option>
+                        <option value="?Q46169">National Park</option>
+                        <option value="?Q9259">World heritage sites</option>
+                    </select>
+                </span>
+            </div>
+            <div id='miniMap'></div>
+            <div id='guessButton' class="btn btn-large btn-danger">Make Your Guess</div>
+            <img id='image' src='' />
         </div>
-        <img id="image" src="" alt="Guess the location">
-        <div id="guessButton">Make Your Guess</div>
-        <div id="map"></div>
-        <div id="endGame"></div>
-    </div>
-</body>
+    </body>
 </html>
