@@ -1,46 +1,49 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset='utf-8'>
-        <title>Wikidata Guessr</title>
-        <link rel='stylesheet' href='css/bootstrap.css' />
-        <link rel='stylesheet' href='css/style.css' />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
-        <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
-        <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
-        <script>
-            let current = 0;
-            let totalScore = 0;
-            let data = [];
+<head>
+    <meta charset='utf-8'>
+    <title>Wikidata Guessr</title>
+    <link rel='stylesheet' href='css/bootstrap.css' />
+    <link rel='stylesheet' href='css/style.css' />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
 
-            async function loadData() {
-                try {
-                    const response = await fetch('locations.json');
-                    data = await response.json();
-                    startRound();
-                } catch (err) {
-                    alert('Error loading locations.json: ' + err);
-                }
+    <script>
+        let current = 0;
+        let totalScore = 0;
+        let data = [];
+
+        async function loadData() {
+            try {
+                const response = await fetch('locations.json');
+                data = await response.json();
+                startRound();
+            } catch (err) {
+                alert('Error loading locations.json: ' + err);
+            }
+        }
+
+        function startRound() {
+            if (current >= data.length) {
+                document.getElementById("endGame").style.display = "block";
+                document.getElementById("endGame").innerHTML = "<h2>Game Over</h2><p>Total Score: " + totalScore + "</p>";
+                return;
             }
 
-            function startRound() {
-                if (current >= data.length) {
-                    document.getElementById("endGame").style.display = "block";
-                    document.getElementById("endGame").innerHTML = "<h2>Game Over</h2><p>Total Score: " + totalScore + "</p>";
-                    return;
-                }
+            const item = data[current];
 
-                const item = data[current];
+            document.getElementById("image").src = item.image;
+            document.querySelector(".round b").textContent = (current + 1) + "/" + data.length;
 
-                document.getElementById("image").src = item.image;
-                document.querySelector(".round b").textContent = (current + 1) + "/" + data.length;
-
+            setTimeout(() => {
                 if (window.miniMap) {
                     window.miniMap.remove();
                 }
 
                 window.miniMap = L.map("miniMap").setView([20, 0], 2);
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(miniMap);
+                window.miniMap.invalidateSize();
 
                 document.getElementById("guessButton").onclick = () => {
                     alert("Click anywhere on the map to guess the location!");
@@ -62,24 +65,25 @@
                         setTimeout(startRound, 3000);
                     });
                 };
-            }
+            }, 100); // delay to ensure #miniMap is in the DOM
+        }
 
-            window.onload = loadData;
-        </script>
-    </head>
-    <body>
-        <div id='content'>
-            <div id="roundEnd"></div>
-            <div id="endGame"></div>
-            <div id='scoreBoard'>
-                <span class='round'>Current Round: <b>1/5</b></span><br/>
-                <span class='roundScore'>Last Round Score: <b>0</b></span><br/>
-                <span class='totalScore'>Total Score: <b>0</b></span><br />
-                <span><a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a></span>
-            </div>
-            <div id='miniMap'></div>
-            <div id='guessButton' class="btn btn-large btn-danger">Make Your Guess</div>
-            <img id='image' src='' />
+        window.onload = loadData;
+    </script>
+</head>
+<body>
+    <div id='content'>
+        <div id="roundEnd"></div>
+        <div id="endGame"></div>
+        <div id='scoreBoard'>
+            <span class='round'>Current Round: <b>1/5</b></span><br/>
+            <span class='roundScore'>Last Round Score: <b>0</b></span><br/>
+            <span class='totalScore'>Total Score: <b>0</b></span><br />
+            <span><a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a></span>
         </div>
-    </body>
+        <div id='miniMap'></div>
+        <div id='guessButton' class="btn btn-large btn-danger">Make Your Guess</div>
+        <img id='image' src='' />
+    </div>
+</body>
 </html>
