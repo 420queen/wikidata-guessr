@@ -1,92 +1,144 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset='utf-8'>
-    <title>Wikidata Guessr</title>
-    <link rel='stylesheet' href='css/bootstrap.css' />
-    <link rel='stylesheet' href='css/style.css' />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
-        integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
-        crossorigin="" />
-    <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
-    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
-        integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
-        crossorigin=""></script>
-    <script>
-        let current = 0;
-        let totalScore = 0;
-        let data = [];
+  <meta charset='utf-8'>
+  <title>Wikidata Guessr - Map Debug</title>
+  <link rel='stylesheet' href='css/bootstrap.css' />
+  <link rel='stylesheet' href='css/style.css' />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+  <style>
+    body, html {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: black;
+    }
 
-        async function loadData() {
-            try {
-                const response = await fetch('locations.json');
-                data = await response.json();
-                startRound();
-            } catch (err) {
-                alert('Error loading locations.json: ' + err);
-            }
-        }
+    #content {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
 
-        function startRound() {
-            if (current >= data.length) {
-                document.getElementById("endGame").style.display = "block";
-                document.getElementById("endGame").innerHTML = "<h2>Game Over</h2><p>Total Score: " + totalScore + "</p>";
-                return;
-            }
+    #miniMap {
+      width: 500px;
+      height: 300px;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: block;
+      border: 2px solid red; /* Debug visibility */
+      box-shadow: 0px 0px 20px rgba(255,255,255, 0.9);
+    }
 
-            const item = data[current];
+    #guessButton {
+      position: absolute;
+      top: 340px;
+      right: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #d9534f;
+      color: white;
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+    }
 
-            document.getElementById("image").src = item.image;
-            document.querySelector(".round b").textContent = (current + 1) + "/" + data.length;
+    #image {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
 
-            if (window.miniMap) {
-                window.miniMap.remove();
-            }
+    #scoreBoard {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      padding: 10px;
+      z-index: 1000;
+    }
+  </style>
 
-            // Delay map creation slightly to ensure #miniMap exists in DOM
-            setTimeout(() => {
-                window.miniMap = L.map("miniMap").setView([20, 0], 2);
-                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(miniMap);
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+  <script>
+    let current = 0;
+    let totalScore = 0;
+    let data = [];
 
-                document.getElementById("guessButton").onclick = () => {
-                    alert("Click anywhere on the map to guess the location!");
+    async function loadData() {
+      try {
+        const response = await fetch('locations.json');
+        data = await response.json();
+        console.log("Loaded JSON:", data);
+        startRound();
+      } catch (err) {
+        alert('Error loading locations.json: ' + err);
+        console.error(err);
+      }
+    }
 
-                    miniMap.once("click", function (e) {
-                        const guess = e.latlng;
-                        const actual = L.latLng(item.lat, item.lon);
-                        const distance = guess.distanceTo(actual) / 1000;
-                        const score = Math.max(0, 5000 - Math.round(distance));
-                        totalScore += score;
+    function startRound() {
+      if (current >= data.length) {
+        document.getElementById("endGame").style.display = "block";
+        document.getElementById("endGame").innerHTML = "<h2>Game Over</h2><p>Total Score: " + totalScore + "</p>";
+        return;
+      }
 
-                        document.querySelector(".roundScore b").textContent = score;
-                        document.querySelector(".totalScore b").textContent = totalScore;
+      const item = data[current];
+      document.getElementById("image").src = item.image;
+      document.querySelector(".round b").textContent = (current + 1) + "/" + data.length;
 
-                        L.marker(actual).addTo(miniMap);
-                        L.polyline([guess, actual]).addTo(miniMap);
+      // Clear and reinitialize the map
+      if (window.miniMap) {
+        window.miniMap.remove();
+      }
 
-                        current++;
-                        setTimeout(startRound, 3000);
-                    });
-                };
-            }, 100);
-        }
+      window.miniMap = L.map("miniMap").setView([20, 0], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© OpenStreetMap'
+      }).addTo(window.miniMap);
 
-        window.onload = loadData;
-    </script>
+      document.getElementById("guessButton").onclick = () => {
+        alert("Click on the map to make a guess.");
+
+        window.miniMap.once("click", function(e) {
+          const guess = e.latlng;
+          const actual = L.latLng(item.lat, item.lon);
+          const distance = guess.distanceTo(actual) / 1000;
+          const score = Math.max(0, 5000 - Math.round(distance));
+          totalScore += score;
+
+          document.querySelector(".roundScore b").textContent = score;
+          document.querySelector(".totalScore b").textContent = totalScore;
+
+          L.marker(actual).addTo(window.miniMap);
+          L.polyline([guess, actual]).addTo(window.miniMap);
+
+          current++;
+          setTimeout(startRound, 3000);
+        });
+      };
+    }
+
+    window.onload = loadData;
+  </script>
 </head>
 <body>
-    <div id='content'>
-        <div id="roundEnd"></div>
-        <div id="endGame"></div>
-        <div id='scoreBoard'>
-            <span class='round'>Current Round: <b>1/5</b></span><br />
-            <span class='roundScore'>Last Round Score: <b>0</b></span><br />
-            <span class='totalScore'>Total Score: <b>0</b></span><br />
-            <span><a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a></span>
-        </div>
-        <div id='miniMap'></div>
-        <div id='guessButton' class="btn btn-large btn-danger">Make Your Guess</div>
-        <img id='image' src='' />
+  <div id="content">
+    <div id="roundEnd"></div>
+    <div id="endGame" style="display:none;"></div>
+    <div id="scoreBoard">
+      <span class="round">Current Round: <b>1/1</b></span><br/>
+      <span class="roundScore">Last Round Score: <b>0</b></span><br/>
+      <span class="totalScore">Total Score: <b>0</b></span><br />
+      <a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a>
     </div>
+    <div id="miniMap"></div>
+    <button id="guessButton">Make Your Guess</button>
+    <img id="image" src="" alt="Guess the location image">
+  </div>
 </body>
 </html>
