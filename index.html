@@ -48,12 +48,10 @@
         document.querySelector(".roundScore b").textContent = score;
         document.querySelector(".totalScore b").textContent = totalScore;
 
-        L.marker(actual).addTo(mymap); // defined in minimap.js
-        L.polyline([guess, actual]).addTo(mymap);
-
-        current++;
-        setTimeout(startRound, 3000);
-      };
+      showRoundEndScreen(item, guess, () => {
+    current++;
+    startRound();
+});
     }
 
     window.onload = loadData;
