@@ -1,44 +1,161 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset='utf-8'>
-        <title>Wikidata Guessr</title>
-        <link rel='stylesheet' href='css/bootstrap.css' />
-        <link rel='stylesheet' href='css/style.css' />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
-        <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
-        <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
-        <script type='text/javascript' src='js/rnd.js'></script>
-        <script type='text/javascript' src='js/minimap.js'></script>
-        <script type='text/javascript' src='js/roundmap.js'></script>
-        <script type='text/javascript' src='js/app.js'></script>
-    </head>
-    <body>
-        <div id='content'>
-            <div id="roundEnd"></div>
-            <div id="endGame"></div>
-            <div id='scoreBoard'>
-                <span class='round'>Current Round: <b>1/5</b></span><br/>
-                <span class='roundScore'>Last Round Score: <b>0</b></span><br/>
-                <span class='totalScore'>Total Score: <b>0</b></span><br />
-                <span><a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a></span>
-                <span>
-                    <select id="mode">
-                        <option value="">Start new game...</option>
-                        <option value="">Any item</option>
-                        <option value="?Q7138926">Parliament buildings</option>
-                        <option value="?Q515">Cities</option>
-                        <option value="?Q570116">Tourist attractions</option>
-                        <option value="?Q8502">Mountains</option>
-                        <option value="?Q204832">Roller coasters</option>
-                        <option value="?Q46169">National Park</option>
-                        <option value="?Q9259">World heritage sites</option>
-                    </select>
-                </span>
-            </div>
-            <div id='miniMap'></div>
-            <div id='guessButton' class="btn btn-large btn-danger">Make Your Guess</div>
-            <img id='image' src='' />
-        </div>
-    </body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Custom Guessr</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      #scoreBoard {
+        margin-bottom: 10px;
+      }
+      #miniMap {
+        height: 400px;
+        margin-bottom: 10px;
+      }
+      #image {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+      }
+      #guessButton {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #d9534f;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+    </style>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <div id="scoreBoard">
+      <span class="round">Current Round: <b>1/5</b></span><br />
+      <span class="roundScore">Last Round Score: <b>0</b></span><br />
+      <span class="totalScore">Total Score: <b>0</b></span><br />
+    </div>
+
+    <div id="miniMap"></div>
+    <div id="guessButton">Make Your Guess</div><br />
+    <img id="image" src="" />
+
+    <script>
+      let currentRound = 0;
+      let totalScore = 0;
+      let rounds = [];
+      let marker;
+      let map;
+      let correctLat, correctLon, correctLabel;
+
+      // Load your custom locations
+      fetch("locations.json")
+        .then((response) => response.json())
+        .then((data) => {
+          const shuffled = data.sort(() => Math.random() - 0.5);
+          rounds = shuffled.slice(0, 5);
+          startGame();
+        })
+        .catch((err) => alert("Could not load locations.json"));
+
+      function startGame() {
+        currentRound = 0;
+        totalScore = 0;
+        updateScoreboard();
+        initMap();
+        loadRound();
+      }
+
+      function initMap() {
+        map = L.map("miniMap").setView([20, 0], 2);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(map);
+
+        map.on("click", function (e) {
+          if (marker) {
+            map.removeLayer(marker);
+          }
+          marker = L.marker(e.latlng).addTo(map);
+          marker.guessLat = e.latlng.lat;
+          marker.guessLon = e.latlng.lng;
+        });
+      }
+
+      function loadRound() {
+        const round = rounds[currentRound];
+        document.getElementById("image").src = round.image;
+        document.getElementById("image").alt = round.label || "Location";
+
+        correctLat = round.lat;
+        correctLon = round.lon;
+        correctLabel = round.label || "Unknown location";
+
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+      }
+
+      function updateScoreboard(lastScore = 0) {
+        document.querySelector(".round b").innerText = `${currentRound + 1}/5`;
+        document.querySelector(".roundScore b").innerText = lastScore;
+        document.querySelector(".totalScore b").innerText = totalScore;
+      }
+
+      function calculateDistance(lat1, lon1, lat2, lon2) {
+        function toRad(x) {
+          return (x * Math.PI) / 180;
+        }
+        const R = 6371;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+
+      document.getElementById("guessButton").onclick = function () {
+        if (!marker) {
+          alert("Please click on the map to make your guess!");
+          return;
+        }
+
+        const guessLat = marker.guessLat;
+        const guessLon = marker.guessLon;
+        const distance = calculateDistance(
+          guessLat,
+          guessLon,
+          correctLat,
+          correctLon
+        );
+        let score = Math.max(0, Math.round(5000 - distance * 10));
+        totalScore += score;
+
+        alert(
+          `This was: ${correctLabel}\nYou were ${distance.toFixed(
+            1
+          )} km away!\nScore: ${score} pts`
+        );
+
+        updateScoreboard(score);
+        currentRound++;
+
+        if (currentRound < rounds.length) {
+          loadRound();
+        } else {
+          alert(`🎉 Game over! Your total score: ${totalScore} pts`);
+        }
+      };
+    </script>
+  </body>
 </html>
