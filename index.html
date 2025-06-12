@@ -5,10 +5,13 @@
     <title>Wikidata Guessr</title>
     <link rel='stylesheet' href='css/bootstrap.css' />
     <link rel='stylesheet' href='css/style.css' />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
+        integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
+        crossorigin="" />
+    <script type='text/javascript' src='https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'></script>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
+        integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
+        crossorigin=""></script>
     <script>
         let current = 0;
         let totalScore = 0;
@@ -36,14 +39,14 @@
             document.getElementById("image").src = item.image;
             document.querySelector(".round b").textContent = (current + 1) + "/" + data.length;
 
-            setTimeout(() => {
-                if (window.miniMap) {
-                    window.miniMap.remove();
-                }
+            if (window.miniMap) {
+                window.miniMap.remove();
+            }
 
+            // Delay map creation slightly to ensure #miniMap exists in DOM
+            setTimeout(() => {
                 window.miniMap = L.map("miniMap").setView([20, 0], 2);
                 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(miniMap);
-                window.miniMap.invalidateSize();
 
                 document.getElementById("guessButton").onclick = () => {
                     alert("Click anywhere on the map to guess the location!");
@@ -65,7 +68,7 @@
                         setTimeout(startRound, 3000);
                     });
                 };
-            }, 100); // delay to ensure #miniMap is in the DOM
+            }, 100);
         }
 
         window.onload = loadData;
@@ -76,8 +79,8 @@
         <div id="roundEnd"></div>
         <div id="endGame"></div>
         <div id='scoreBoard'>
-            <span class='round'>Current Round: <b>1/5</b></span><br/>
-            <span class='roundScore'>Last Round Score: <b>0</b></span><br/>
+            <span class='round'>Current Round: <b>1/5</b></span><br />
+            <span class='roundScore'>Last Round Score: <b>0</b></span><br />
             <span class='totalScore'>Total Score: <b>0</b></span><br />
             <span><a href="https://github.com/blinry/wikidata-guessr">View project on GitHub</a></span>
         </div>
